@@ -1,0 +1,1 @@
+void bgfx_frame();
