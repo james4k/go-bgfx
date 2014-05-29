@@ -3,12 +3,7 @@
  * License: http://www.opensource.org/licenses/BSD-2-Clause
  */
 
-//#include "bgfx_p.h"
-
-//#if BX_PLATFORM_OSX && (BGFX_CONFIG_RENDERER_OPENGLES2|BGFX_CONFIG_RENDERER_OPENGLES3|BGFX_CONFIG_RENDERER_OPENGL)
-//#	include "renderer_gl.h"
-#	include <Cocoa/Cocoa.h>
-//#	include <bx/os.h>
+#include <Cocoa/Cocoa.h>
 
 struct GlCtx_s
 {
@@ -84,4 +79,3 @@ void bgfx_GlContext_swap(GlCtx *ctx)
 	[glContext flushBuffer];
 }
 
-//#endif // BX_PLATFORM_OSX && (BGFX_CONFIG_RENDERER_OPENGLES2|BGFX_CONFIG_RENDERER_OPENGLES3|BGFX_CONFIG_RENDERER_OPENGL)
