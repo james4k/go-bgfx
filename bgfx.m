@@ -1,12 +1,13 @@
+// Generate file with prepare.sh
 /*
  * Copyright 2011-2014 Branimir Karadzic. All rights reserved.
  * License: http://www.opensource.org/licenses/BSD-2-Clause
  */
 
-//#include "zbgfx_p.h"
+//#include "bgfx_p.h"
 
 //#if BX_PLATFORM_OSX && (BGFX_CONFIG_RENDERER_OPENGLES2|BGFX_CONFIG_RENDERER_OPENGLES3|BGFX_CONFIG_RENDERER_OPENGL)
-//#include "zrenderer_gl.h"
+//#	include "renderer_gl.h"
 #	include <Cocoa/Cocoa.h>
 //#	include <bx/os.h>
 

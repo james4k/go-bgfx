@@ -78,7 +78,7 @@ typedef uint64_t GLuint64;
 #	endif // BGFX_CONFIG_RENDERER_
 
 #	if BGFX_USE_EGL
-#include "zglcontext_egl.h"
+#		include "glcontext_egl.h"
 #	endif // BGFX_USE_EGL
 
 #	if BX_PLATFORM_EMSCRIPTEN
@@ -341,19 +341,19 @@ typedef uint64_t GLuint64;
 #endif // GL_COMPUTE_SHADER
 
 #if BX_PLATFORM_NACL
-#include "zglcontext_ppapi.h"
+#	include "glcontext_ppapi.h"
 #elif BX_PLATFORM_WINDOWS
 #	include <windows.h>
 #elif BX_PLATFORM_LINUX
-#include "zglcontext_glx.h"
+#	include "glcontext_glx.h"
 #elif BX_PLATFORM_OSX
-#include "zglcontext_nsgl.h"
+#	include "glcontext_nsgl.h"
 #elif BX_PLATFORM_IOS
-#include "zglcontext_eagl.h"
+#	include "glcontext_eagl.h"
 #endif // BX_PLATFORM_
 
 #if BGFX_USE_WGL
-#include "zglcontext_wgl.h"
+#	include "glcontext_wgl.h"
 #endif // BGFX_USE_WGL
 
 #ifndef GL_APIENTRY
@@ -396,7 +396,7 @@ namespace bgfx
 
 #define GL_IMPORT_TYPEDEFS 1
 #define GL_IMPORT(_optional, _proto, _func, _import) extern _proto _func
-#include "zglimports.h"
+#include "glimports.h"
 
 	class VaoStateCache
 	{

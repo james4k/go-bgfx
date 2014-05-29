@@ -43,7 +43,7 @@ typedef IDirect3D9* (WINAPI *Direct3DCreate9Fn)(UINT SDKVersion);
 #	define D3DSTREAMSOURCE_INSTANCEDATA (2<<30)
 #endif // D3DSTREAMSOURCE_INSTANCEDATA
 
-#include "zrenderer_d3d.h"
+#include "renderer_d3d.h"
 
 namespace bgfx
 {

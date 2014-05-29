@@ -6,8 +6,8 @@
 #ifndef BGFX_P_H_HEADER_GUARD
 #define BGFX_P_H_HEADER_GUARD
 
-#include <bgfx.h>
-#include "zconfig.h"
+#include "bgfx.h"
+#include "config.h"
 
 #include <inttypes.h>
 #include <stdarg.h> // va_list
@@ -74,8 +74,8 @@ namespace bgfx
 #include <bx/string.h>
 #include <bx/os.h>
 
-#include <bgfxplatform.h>
-#include "zimage.h"
+#include "bgfxplatform.h"
+#include "image.h"
 
 #define BGFX_CHUNK_MAGIC_CSH BX_MAKEFOURCC('C', 'S', 'H', 0x0)
 #define BGFX_CHUNK_MAGIC_FSH BX_MAKEFOURCC('F', 'S', 'H', 0x2)
@@ -122,7 +122,7 @@ namespace stl
 #include <bx/thread.h>
 #include <bx/timer.h>
 
-#include "zvertexdecl.h"
+#include "vertexdecl.h"
 
 #define BGFX_DEFAULT_WIDTH  1280
 #define BGFX_DEFAULT_HEIGHT 720

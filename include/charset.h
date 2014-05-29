@@ -523,11 +523,11 @@ static const uint8_t vga8x16[256*16] =
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-#include "zvs_debugfont.bin.h"
-#include "zfs_debugfont.bin.h"
+#include "vs_debugfont.bin.h"
+#include "fs_debugfont.bin.h"
 
-#include "zvs_clear.bin.h"
-#include "zfs_clear0.bin.h"
-#include "zfs_clear1.bin.h"
-#include "zfs_clear2.bin.h"
-#include "zfs_clear3.bin.h"
+#include "vs_clear.bin.h"
+#include "fs_clear0.bin.h"
+#include "fs_clear1.bin.h"
+#include "fs_clear2.bin.h"
+#include "fs_clear3.bin.h"
