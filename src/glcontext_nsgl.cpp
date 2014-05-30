@@ -3,8 +3,8 @@
  * License: http://www.opensource.org/licenses/BSD-2-Clause
  */
 
-// This shim of sorts is hopefully a temporary solution until the go
-// tool gets .mm support.
+// This shim of sorts is a temporary solution until the go
+// tool gets .mm support, or bgfx provides a context API.
 
 #include "bgfx_p.h"
 

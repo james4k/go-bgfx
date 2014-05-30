@@ -9,3 +9,8 @@ of the same name.
 
 See <https://github.com/bkaradzic/bgfx>.
 
+#### A note on the git submodules
+
+The submodules are only used when running the prepare.sh script to
+generate go tool compatible code from the bgfx source. A side benefit is
+that the package is nice and lean in its default state.

@@ -16911,6 +16911,9 @@ namespace bgfx
  * License: http://www.opensource.org/licenses/BSD-2-Clause
  */
 
+// This shim of sorts is a temporary solution until the go
+// tool gets .mm support, or bgfx provides a context API.
+
 #include "bgfx_p.h"
 
 #if BX_PLATFORM_OSX && (BGFX_CONFIG_RENDERER_OPENGLES2|BGFX_CONFIG_RENDERER_OPENGLES3|BGFX_CONFIG_RENDERER_OPENGL)
@@ -16925,20 +16928,19 @@ namespace bgfx
 	
 	static void* s_opengl = NULL;
 
-extern "C"
-{
-struct GlCtx_s
-{
-	void* view;
-	void* m_context;
-} typedef GlCtx;
+	extern "C"
+	{
+		struct GlCtx_s
+		{
+			void* view;
+			void* m_context;
+		} typedef GlCtx;
 
-void bgfx_GlContext_create(GlCtx *ctx, void* nswnd, uint32_t _width, uint32_t _height);
-void bgfx_GlContext_destroy(GlCtx *ctx);
-void bgfx_GlContext_resize(GlCtx *ctx, uint32_t _width, uint32_t _height, bool _vsync);
-void bgfx_GlContext_swap(GlCtx *ctx);
-}
-
+		void bgfx_GlContext_create(GlCtx *ctx, void* nswnd, uint32_t _width, uint32_t _height);
+		void bgfx_GlContext_destroy(GlCtx *ctx);
+		void bgfx_GlContext_resize(GlCtx *ctx, uint32_t _width, uint32_t _height, bool _vsync);
+		void bgfx_GlContext_swap(GlCtx *ctx);
+	}
 
 	void GlContext::create(uint32_t _width, uint32_t _height)
 	{
