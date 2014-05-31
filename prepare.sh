@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
-# get sources
-git submodule update --init
+# init submodules if we haven't already
+if [ `git submodule | wc -l` -lt 2 ]; then
+	git submodule update --init
+fi
 
 # remove old generated files
 rm -rf include/*
