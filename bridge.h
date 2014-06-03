@@ -1,7 +1,9 @@
+#ifndef BGFX_C_API
 #ifdef __cplusplus
 #define BGFX_C_API extern "C"
 #else
 #define BGFX_C_API
+#endif
 #endif
 
 // serves as cgo's interface to bgfx_dbg_text_printf, since cgo does not

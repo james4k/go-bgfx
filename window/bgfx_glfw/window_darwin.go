@@ -17,6 +17,6 @@ import (
 
 func SetWindow(wnd *glfw.Window) {
 	cwnd := *(*unsafe.Pointer)(unsafe.Pointer(wnd))
-	nswnd := C.glfwGetCocoaWindow((*C.GLFWwindow)(cwnd))
+	nswnd := C.glfwGetNSGLContext((*C.GLFWwindow)(cwnd))
 	bgfx.SetCocoaWindow(uintptr(unsafe.Pointer(nswnd)))
 }

@@ -28,7 +28,7 @@ namespace bgfx
 			void* m_context;
 		} typedef GlCtx;
 
-		void bgfx_GlContext_create(GlCtx *ctx, void* nswnd, uint32_t _width, uint32_t _height);
+		void bgfx_GlContext_create(GlCtx *ctx, void* nsctx, uint32_t _width, uint32_t _height);
 		void bgfx_GlContext_destroy(GlCtx *ctx);
 		void bgfx_GlContext_resize(GlCtx *ctx, uint32_t _width, uint32_t _height, bool _vsync);
 		void bgfx_GlContext_swap(GlCtx *ctx);

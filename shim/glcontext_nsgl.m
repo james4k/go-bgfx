@@ -11,10 +11,11 @@ struct GlCtx_s
 	void* context;
 } typedef GlCtx;
 
-void bgfx_GlContext_create(GlCtx* ctx, void* nswnd, uint32_t _width, uint32_t _height)
+void bgfx_GlContext_create(GlCtx* ctx, void* nsctx, uint32_t _width, uint32_t _height)
 {
 	//BX_UNUSED(_width, _height);
 
+	/*
 	NSWindow* nsWindow = (NSWindow*)nswnd;
 
 	NSOpenGLPixelFormatAttribute profile =
@@ -45,24 +46,26 @@ void bgfx_GlContext_create(GlCtx* ctx, void* nswnd, uint32_t _width, uint32_t _h
 	
 	[pixelFormat release];
 	[nsWindow setContentView:glView];
+	*/
 	
-	NSOpenGLContext* glContext = [glView openGLContext];
+	//NSOpenGLContext* glContext = [glView openGLContext];
 	//BGFX_FATAL(NULL != glContext, Fatal::UnableToInitialize, "Failed to initialize GL context.");
+	NSOpenGLContext* glContext = (NSOpenGLContext*)nsctx;
 
 	[glContext makeCurrentContext];
 	GLint interval = 0;
 	[glContext setValues:&interval forParameter:NSOpenGLCPSwapInterval];
 	
-	ctx->view    = glView;
+	//ctx->view    = glView;
 	ctx->context = glContext;
 }
 
 void bgfx_GlContext_destroy(GlCtx* ctx)
 {
-	NSOpenGLView* glView = (NSOpenGLView*)ctx->view;
-	ctx->view = 0;
+	//NSOpenGLView* glView = (NSOpenGLView*)ctx->view;
+	//ctx->view = 0;
 	ctx->context = 0;
-	[glView release];
+	//[glView release];
 }
 
 void bgfx_GlContext_resize(GlCtx* ctx, uint32_t _width, uint32_t _height, bool _vsync)

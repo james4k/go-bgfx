@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 
 	glfw "github.com/go-gl/glfw3"
 	"github.com/james4k/go-bgfx"
@@ -10,12 +11,10 @@ import (
 )
 
 func main() {
-	const (
-		title = "bgfx-00-helloworld"
-	)
 	var (
 		width  = 512
 		height = 512
+		title  = filepath.Base(os.Args[0])
 	)
 	glfw.SetErrorCallback(func(err glfw.ErrorCode, desc string) {
 		log.Printf("glfw: %s\n", desc)
