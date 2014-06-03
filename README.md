@@ -14,7 +14,7 @@ See <https://github.com/bkaradzic/bgfx>.
 [GLFW](http://www.glfw.org/) is required to run the examples.
 
 Installing and running the examples is simple, assuming you have your
-$GOPATH/bin setup in $PATH.
+$GOPATH/bin setup in $PATH:
 
 ```
 $ go install github.com/james4k/go-bgfx/examples/...

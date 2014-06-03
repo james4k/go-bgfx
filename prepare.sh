@@ -2,7 +2,7 @@
 set -e
 
 # init submodules if we haven't already
-if [ `git submodule | wc -l` -lt 2 ]; then
+if [ `git submodule | grep "^\-" | wc -l` -gt 0 ]; then
 	git submodule update --init
 fi
 
@@ -27,3 +27,6 @@ echo "// Generate file with prepare.sh" > bgfx.m
 for file in `ls shim/*.m`; do
 	cat $file >> bgfx.m
 done
+
+# copy LICENSE file
+cp lib/bgfx/LICENSE bgfx-LICENSE
