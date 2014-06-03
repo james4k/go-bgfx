@@ -1,6 +1,6 @@
 ## bgfx
 
-_INCOMPLETE_
+_In progress and likely only works on OS X at this point._
 
 Package bgfx is a wrapper around Branimir Karadžić's rendering library
 of the same name.
