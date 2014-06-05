@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	glfw "github.com/go-gl/glfw3"
 	"github.com/go-gl/mathgl/mgl32"
@@ -45,6 +46,7 @@ var indices = []uint16{
 }
 
 func main() {
+	runtime.LockOSThread()
 	var (
 		width  = 1280
 		height = 800

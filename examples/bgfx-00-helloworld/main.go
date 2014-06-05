@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	glfw "github.com/go-gl/glfw3"
 	"github.com/james4k/go-bgfx"
@@ -11,6 +12,7 @@ import (
 )
 
 func main() {
+	runtime.LockOSThread()
 	var (
 		width  = 512
 		height = 512

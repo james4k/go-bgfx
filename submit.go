@@ -17,6 +17,10 @@ func SetVertexBuffer(vb VertexBuffer) {
 	C.bgfx_set_vertex_buffer(vb.h, 0, 0xffffffff)
 }
 
+func SetTransientVertexBuffer(tvb TransientVertexBuffer, start, num int) {
+	C.bgfx_set_transient_vertex_buffer(&tvb.tvb, C.uint32_t(start), C.uint32_t(num))
+}
+
 func SetIndexBuffer(ib IndexBuffer) {
 	C.bgfx_set_index_buffer(ib.h, 0, 0xffffffff)
 }

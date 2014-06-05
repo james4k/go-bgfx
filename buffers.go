@@ -87,6 +87,28 @@ func DestroyVertexBuffer(vb VertexBuffer) {
 	C.bgfx_destroy_vertex_buffer(vb.h)
 }
 
+type TransientVertexBuffer struct {
+	tvb C.bgfx_transient_vertex_buffer_t
+}
+
+func AllocTransientVertexBuffer(data interface{}, size int, decl VertexDecl) TransientVertexBuffer {
+	val := reflect.ValueOf(data)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		panic(errors.New("bgfx: expected pointer to slice"))
+	}
+	var tvb TransientVertexBuffer
+	C.bgfx_alloc_transient_vertex_buffer(
+		&tvb.tvb,
+		C.uint32_t(size),
+		&decl.decl,
+	)
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(val.Pointer()))
+	slice.Data = uintptr(unsafe.Pointer(tvb.tvb.data))
+	slice.Len = size
+	slice.Cap = size
+	return tvb
+}
+
 type IndexBuffer struct {
 	h C.bgfx_index_buffer_handle_t
 }
