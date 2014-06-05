@@ -35,7 +35,7 @@ func main() {
 	bgfx_glfw.SetWindow(window)
 	bgfx.Init()
 	defer bgfx.Shutdown()
-	bgfx.Reset(width, height)
+	bgfx.Reset(width, height, bgfx.ResetVSync)
 	bgfx.SetDebug(bgfx.DebugText)
 	bgfx.SetViewClear(
 		0,

@@ -70,7 +70,7 @@ func main() {
 	bgfx.Init()
 	defer bgfx.Shutdown()
 
-	bgfx.Reset(width, height, bgfx.ResetVSync)
+	bgfx.Reset(width, height, 0)
 	bgfx.SetDebug(bgfx.DebugText)
 	bgfx.SetViewClear(
 		0,
@@ -95,16 +95,34 @@ func main() {
 	}
 	defer bgfx.DestroyProgram(prog)
 
-	var last float32
+	var (
+		last, avgdt, totaldt float32
+		nframes              int
+		dim                  = 12
+	)
 	for !window.ShouldClose() {
 		now := float32(glfw.GetTime())
-		delta := now - last
+		dt := now - last
 		last = now
+
+		if totaldt >= 1.0 {
+			avgdt = totaldt / float32(nframes)
+			if avgdt < 1.0/65 {
+				dim += 2
+			} else if avgdt > 1.0/57 && dim > 2 {
+				dim -= 1
+			}
+			totaldt = 0
+			nframes = 0
+		}
+		totaldt += dt
+		nframes++
+
 		width, height = window.GetSize()
 		var (
 			eye = mgl32.Vec3{0, 0, -35.0}
 			at  = mgl32.Vec3{0, 0, 0}
-			up  = mgl32.Vec3{1, 0, 0}
+			up  = mgl32.Vec3{0, 1, 0}
 		)
 		view := [16]float32(mgl32.LookAtV(eye, at, up))
 		proj := [16]float32(mgl32.Perspective(
@@ -116,26 +134,37 @@ func main() {
 		bgfx.SetViewRect(0, 0, 0, width, height)
 		bgfx.DebugTextClear()
 		bgfx.DebugTextPrintf(0, 1, 0x4f, title)
-		bgfx.DebugTextPrintf(0, 2, 0x6f, "Description: Rendering simple static mesh.")
-		bgfx.DebugTextPrintf(0, 3, 0x0f, "Frame: % 7.3f[ms]", delta*1000.0)
+		bgfx.DebugTextPrintf(0, 2, 0x6f, "Description: Draw stress, maximizing number of draw calls.")
+		bgfx.DebugTextPrintf(0, 3, 0x0f, "Frame: % 7.3f[ms]", dt*1000.0)
+		bgfx.DebugTextPrintf(0, 5, 0x0f, "Dim: %d", dim)
+		bgfx.DebugTextPrintf(0, 6, 0x0f, "AvgFrame: % 7.3f[ms]", avgdt*1000.0)
 		bgfx.Submit(0)
 
-		// Submit 11x11 cubes
-		for y := 0; y < 11; y++ {
-			for x := 0; x < 11; x++ {
-				const toDeg = 57
-				mtx := mgl32.HomogRotate3DX(now*toDeg + float32(x)*0.21*toDeg)
-				mtx = mtx.Mul4(mgl32.HomogRotate3DY(now*toDeg + float32(y)*0.37*toDeg))
-				mtx[12] = -15 + float32(x)*3
-				mtx[13] = -15 + float32(y)*3
-				mtx[14] = 0
+		const step = 0.6
+		pos := [3]float32{
+			-step * float32(dim) / 2.0,
+			-step * float32(dim) / 2.0,
+			-15,
+		}
+		for z := 0; z < dim; z++ {
+			for y := 0; y < dim; y++ {
+				for x := 0; x < dim; x++ {
+					const toDeg = 57
+					mtx := mgl32.HomogRotate3DX(now*toDeg + float32(x)*0.21*toDeg)
+					mtx = mtx.Mul4(mgl32.HomogRotate3DY(now*toDeg + float32(y)*0.37*toDeg))
+					mtx = mtx.Mul4(mgl32.HomogRotate3DY(now*toDeg + float32(z)*0.13*toDeg))
+					mtx = mtx.Mul4(mgl32.Scale3D(0.25, 0.25, 0.25))
+					mtx[12] = pos[0] + float32(x)*step
+					mtx[13] = pos[1] + float32(y)*step
+					mtx[14] = pos[2] + float32(z)*step
 
-				bgfx.SetTransform([16]float32(mtx))
-				bgfx.SetProgram(prog)
-				bgfx.SetVertexBuffer(vb)
-				bgfx.SetIndexBuffer(ib)
-				bgfx.SetState(bgfx.StateDefault)
-				bgfx.Submit(0)
+					bgfx.SetTransform([16]float32(mtx))
+					bgfx.SetProgram(prog)
+					bgfx.SetVertexBuffer(vb)
+					bgfx.SetIndexBuffer(ib)
+					bgfx.SetState(bgfx.StateDefault)
+					bgfx.Submit(0)
+				}
 			}
 		}
 

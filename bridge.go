@@ -19,10 +19,15 @@ func Shutdown() {
 	C.bgfx_shutdown()
 }
 
+type ResetFlags uint32
+
+const (
+	ResetVSync = 0x80
+)
+
 // Reset resets the graphics settings.
-// TODO: flags/options
-func Reset(width, height int) {
-	C.bgfx_reset(C.uint32_t(width), C.uint32_t(height), C.BGFX_RESET_VSYNC)
+func Reset(width, height int, flags ResetFlags) {
+	C.bgfx_reset(C.uint32_t(width), C.uint32_t(height), C.uint32_t(flags))
 }
 
 // Frame advances to the next frame. Returns the current frame number.

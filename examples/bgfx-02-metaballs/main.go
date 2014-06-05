@@ -23,7 +23,7 @@ func main() {
 	runtime.LockOSThread()
 	var (
 		width  = 1280
-		height = 800
+		height = 720
 		title  = filepath.Base(os.Args[0])
 	)
 	glfw.SetErrorCallback(func(err glfw.ErrorCode, desc string) {
@@ -44,7 +44,7 @@ func main() {
 	bgfx.Init()
 	defer bgfx.Shutdown()
 
-	bgfx.Reset(width, height)
+	bgfx.Reset(width, height, bgfx.ResetVSync)
 	bgfx.SetDebug(bgfx.DebugText)
 	bgfx.SetViewClear(
 		0,
@@ -114,19 +114,22 @@ func main() {
 
 		profUpdate := glfw.GetTime()
 		for z := 0; z < dim; z++ {
+			fz := float32(z)
 			for y := 0; y < dim; y++ {
+				fy := float32(y)
 				offset := (z*dim + y) * dim
 				for x := 0; x < dim; x++ {
 					var (
+						fx      = float32(x)
 						dist    float32
 						prod    float32 = 1.0
 						xoffset         = offset + x
 					)
 					for i := 0; i < numSpheres; i++ {
 						pos := &spheres[i]
-						dx := pos[0] - (-dim*0.5 + float32(x))
-						dy := pos[1] - (-dim*0.5 + float32(y))
-						dz := pos[2] - (-dim*0.5 + float32(z))
+						dx := pos[0] - (-dim*0.5 + fx)
+						dy := pos[1] - (-dim*0.5 + fy)
+						dz := pos[2] - (-dim*0.5 + fz)
 						invr := pos[3]
 						dot := dx*dx + dy*dy + dz*dz
 						dot *= invr * invr
