@@ -11,12 +11,12 @@ const (
 )
 
 const (
-	StateDepthTestLess State = 0x10 << (iota >> 1)
+	StateDepthTestLess State = 0x10 << iota
 	StateDepthTestLessEqual
 )
 
 const (
-	StateCullCW State = 0x0000001000000000 << (iota >> 1)
+	StateCullCW State = 0x0000001000000000 << iota
 	StateCullCCW
 )
 

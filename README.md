@@ -24,6 +24,10 @@ $ go install github.com/james4k/go-bgfx/examples/...
 $ bgfx-01-cubes
 ```
 
+If you want to see the sources to the shaders used by the examples, for
+now you should go to the original
+[https://github.com/bkaradzic/bgfx/tree/master/examples](bgfx source).
+
 ### A note on the git submodules
 
 The submodules are only used when running the prepare.sh script to

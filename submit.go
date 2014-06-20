@@ -25,6 +25,10 @@ func SetIndexBuffer(ib IndexBuffer) {
 	C.bgfx_set_index_buffer(ib.h, 0, 0xffffffff)
 }
 
+func SetInstanceDataBuffer(idb InstanceDataBuffer) {
+	C.bgfx_set_instance_data_buffer(idb.b, 0xffff)
+}
+
 func SetState(state State) {
 	C.bgfx_set_state(C.uint64_t(state), 0)
 }

@@ -4,6 +4,7 @@ package bgfx
 import "C"
 import (
 	"errors"
+	"io"
 	"reflect"
 	"unsafe"
 )
@@ -124,4 +125,39 @@ func CreateIndexBuffer(data []uint16) IndexBuffer {
 
 func DestroyIndexBuffer(ib IndexBuffer) {
 	C.bgfx_destroy_index_buffer(ib.h)
+}
+
+type InstanceDataBuffer struct {
+	b    *C.bgfx_instance_data_buffer_t
+	data []byte
+	n    int
+}
+
+func AllocInstanceDataBuffer(num, stride int) InstanceDataBuffer {
+	idb := C.bgfx_alloc_instance_data_buffer(
+		C.uint32_t(num),
+		C.uint16_t(stride),
+	)
+	slice := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(idb.data)),
+		Len:  int(idb.size),
+		Cap:  int(idb.size),
+	}
+	return InstanceDataBuffer{
+		b:    idb,
+		data: *(*[]byte)(unsafe.Pointer(&slice)),
+	}
+}
+
+func (b *InstanceDataBuffer) Write(p []byte) (n int, err error) {
+	n = len(p)
+	if b.n+n >= len(b.data) {
+		n = len(b.data) - b.n
+		err = io.EOF
+	}
+	for i := 0; i < n; i++ {
+		b.data[b.n+i] = p[i]
+	}
+	b.n += n
+	return
 }
