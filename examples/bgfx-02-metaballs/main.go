@@ -88,7 +88,7 @@ func main() {
 		)
 		view := [16]float32(mgl32.LookAtV(eye, at, up))
 		proj := [16]float32(mgl32.Perspective(
-			60.0,
+			mgl32.DegToRad(60.0),
 			float32(width)/float32(height),
 			0.1, 100.0,
 		))
@@ -206,8 +206,8 @@ func main() {
 
 		bgfx.DebugTextPrintf(0, 10, 0x1f, "BUG: looks like an error with the normals/colors")
 
-		mtx := mgl32.HomogRotate3DX(now * 57 * 0.67)
-		mtx = mtx.Mul4(mgl32.HomogRotate3DY(now * 57))
+		mtx := mgl32.HomogRotate3DX(now * 0.67)
+		mtx = mtx.Mul4(mgl32.HomogRotate3DY(now))
 		bgfx.SetTransform([16]float32(mtx))
 		bgfx.SetProgram(prog)
 		bgfx.SetTransientVertexBuffer(tvb, 0, numVertices)

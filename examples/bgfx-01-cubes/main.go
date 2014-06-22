@@ -108,7 +108,7 @@ func main() {
 		)
 		view := [16]float32(mgl32.LookAtV(eye, at, up))
 		proj := [16]float32(mgl32.Perspective(
-			60.0,
+			mgl32.DegToRad(60.0),
 			float32(width)/float32(height),
 			0.1, 100.0,
 		))
@@ -123,9 +123,8 @@ func main() {
 		// Submit 11x11 cubes
 		for y := 0; y < 11; y++ {
 			for x := 0; x < 11; x++ {
-				const toDeg = 57
-				mtx := mgl32.HomogRotate3DX(now*toDeg + float32(x)*0.21*toDeg)
-				mtx = mtx.Mul4(mgl32.HomogRotate3DY(now*toDeg + float32(y)*0.37*toDeg))
+				mtx := mgl32.HomogRotate3DX(now + float32(x)*0.21)
+				mtx = mtx.Mul4(mgl32.HomogRotate3DY(now + float32(y)*0.37))
 				mtx[12] = -15 + float32(x)*3
 				mtx[13] = -15 + float32(y)*3
 				mtx[14] = 0
