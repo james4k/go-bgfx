@@ -88,6 +88,23 @@ func DestroyVertexBuffer(vb VertexBuffer) {
 	C.bgfx_destroy_vertex_buffer(vb.h)
 }
 
+type IndexBuffer struct {
+	h C.bgfx_index_buffer_handle_t
+}
+
+func CreateIndexBuffer(data []uint16) IndexBuffer {
+	return IndexBuffer{
+		h: C.bgfx_create_index_buffer(
+			// to keep things simple for now, we'll just copy
+			C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)*2)),
+		),
+	}
+}
+
+func DestroyIndexBuffer(ib IndexBuffer) {
+	C.bgfx_destroy_index_buffer(ib.h)
+}
+
 type TransientVertexBuffer struct {
 	tvb C.bgfx_transient_vertex_buffer_t
 }
@@ -110,21 +127,47 @@ func AllocTransientVertexBuffer(data interface{}, size int, decl VertexDecl) Tra
 	return tvb
 }
 
-type IndexBuffer struct {
-	h C.bgfx_index_buffer_handle_t
+type TransientIndexBuffer struct {
+	tib C.bgfx_transient_index_buffer_t
 }
 
-func CreateIndexBuffer(data []uint16) IndexBuffer {
-	return IndexBuffer{
-		h: C.bgfx_create_index_buffer(
-			// to keep things simple for now, we'll just copy
-			C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)*2)),
-		),
+func AllocTransientIndexBuffer(buf *[]uint16, num int) TransientIndexBuffer {
+	var tib TransientIndexBuffer
+	C.bgfx_alloc_transient_index_buffer(
+		&tib.tib,
+		C.uint32_t(num),
+	)
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(buf))
+	slice.Data = uintptr(unsafe.Pointer(tib.tib.data))
+	slice.Len = num
+	slice.Cap = num
+	return tib
+}
+
+func AllocTransientBuffers(verts interface{}, idxs *[]uint16, decl VertexDecl, numVerts, numIndices int) (tvb TransientVertexBuffer, tib TransientIndexBuffer, ok bool) {
+	val := reflect.ValueOf(verts)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		panic(errors.New("bgfx: expected pointer to slice"))
 	}
-}
-
-func DestroyIndexBuffer(ib IndexBuffer) {
-	C.bgfx_destroy_index_buffer(ib.h)
+	ok = bool(C.bgfx_alloc_transient_buffers(
+		&tvb.tvb,
+		&decl.decl,
+		C.uint16_t(numVerts),
+		&tib.tib,
+		C.uint16_t(numIndices),
+	))
+	if !ok {
+		return
+	}
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(val.Pointer()))
+	slice.Data = uintptr(unsafe.Pointer(tvb.tvb.data))
+	slice.Len = numVerts
+	slice.Cap = numVerts
+	slice = (*reflect.SliceHeader)(unsafe.Pointer(idxs))
+	slice.Data = uintptr(unsafe.Pointer(tib.tib.data))
+	slice.Len = numIndices
+	slice.Cap = numIndices
+	return
 }
 
 type InstanceDataBuffer struct {

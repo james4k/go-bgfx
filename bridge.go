@@ -10,6 +10,7 @@ package bgfx
 #include "bridge.h"
 */
 import "C"
+import "unsafe"
 
 func Init() {
 	C.bgfx_init(C.BGFX_RENDERER_TYPE_NULL, nil, nil)
@@ -105,4 +106,33 @@ func Caps() Capabilities {
 		MaxDrawCalls:     uint16(caps.maxDrawCalls),
 		MaxFBAttachments: uint8(caps.maxFBAttachments),
 	}
+}
+
+type UniformType uint8
+
+const (
+	Uniform1i UniformType = iota
+	Uniform1f
+	_
+	Uniform1iv
+	Uniform1fv
+	Uniform2fv
+	Uniform3fv
+	Uniform4fv
+	Uniform3x3fv
+	Uniform4x4fv
+)
+
+type Uniform struct {
+	h C.bgfx_uniform_handle_t
+}
+
+func CreateUniform(name string, typ UniformType, num int) Uniform {
+	cname := C.CString(name)
+	defer C.free(unsafe.Pointer(cname))
+	h := C.bgfx_create_uniform(cname, C.bgfx_uniform_type_t(typ), C.uint16_t(num))
+	return Uniform{h: h}
+}
+func DestroyUniform(u Uniform) {
+	C.bgfx_destroy_uniform(u.h)
 }
