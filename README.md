@@ -18,7 +18,7 @@ Installing and running the examples is simple, assuming you have your
 $GOPATH/bin setup in $PATH:
 
 ```
-$ go install github.com/james4k/go-bgfx/examples/...
+$ go get github.com/james4k/go-bgfx-examples/...
 $ bgfx-01-cubes
 ```
 
