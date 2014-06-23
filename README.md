@@ -23,8 +23,8 @@ $ bgfx-01-cubes
 ```
 
 If you want to see the sources to the shaders used by the examples, for
-now you should go to the original
-[https://github.com/bkaradzic/bgfx/tree/master/examples](bgfx source).
+now you should go to the original examples:
+<https://github.com/bkaradzic/bgfx/tree/master/examples>.
 
 ### A note on the git submodules
 
