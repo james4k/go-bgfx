@@ -975,13 +975,13 @@ namespace bgfx
 		if (BX_ENABLED(BGFX_CONFIG_DEBUG) )
 		{
 #define CHECK_HANDLE_LEAK(_handleAlloc) \
-					do { \
+					BX_MACRO_BLOCK_BEGIN \
 						BX_WARN(0 == _handleAlloc.getNumHandles() \
 							, "LEAK: " #_handleAlloc " %d (max: %d)" \
 							, _handleAlloc.getNumHandles() \
 							, _handleAlloc.getMaxHandles() \
 							); \
-					} while (0)
+					BX_MACRO_BLOCK_END
 
 			CHECK_HANDLE_LEAK(m_dynamicIndexBufferHandle);
 			CHECK_HANDLE_LEAK(m_dynamicVertexBufferHandle);
@@ -1785,6 +1785,7 @@ again:
 
 	void init(RendererType::Enum _type, CallbackI* _callback, bx::ReallocatorI* _allocator)
 	{
+		BX_CHECK(NULL == s_ctx, "bgfx is already initialized.");
 		BX_TRACE("Init...");
 
 		memset(&g_caps, 0, sizeof(g_caps) );
@@ -2606,12 +2607,14 @@ again:
 } // namespace bgfx
 
 #include <bgfx.c99.h>
+#include <bgfxplatform.c99.h>
 
 BX_STATIC_ASSERT(bgfx::RendererType::Count  == bgfx::RendererType::Enum(BGFX_RENDERER_TYPE_COUNT) );
 BX_STATIC_ASSERT(bgfx::Attrib::Count        == bgfx::Attrib::Enum(BGFX_ATTRIB_COUNT) );
 BX_STATIC_ASSERT(bgfx::AttribType::Count    == bgfx::AttribType::Enum(BGFX_ATTRIB_TYPE_COUNT) );
 BX_STATIC_ASSERT(bgfx::TextureFormat::Count == bgfx::TextureFormat::Enum(BGFX_TEXTURE_FORMAT_COUNT) );
 BX_STATIC_ASSERT(bgfx::UniformType::Count   == bgfx::UniformType::Enum(BGFX_UNIFORM_TYPE_COUNT) );
+BX_STATIC_ASSERT(bgfx::RenderFrame::Count   == bgfx::RenderFrame::Enum(BGFX_RENDER_FRAME_COUNT) );
 
 BX_STATIC_ASSERT(sizeof(bgfx::Memory)                == sizeof(bgfx_memory_t) );
 BX_STATIC_ASSERT(sizeof(bgfx::VertexDecl)            == sizeof(bgfx_vertex_decl_t) );
@@ -3197,6 +3200,49 @@ BGFX_C_API void bgfx_save_screen_shot(const char* _filePath)
 {
 	bgfx::saveScreenShot(_filePath);
 }
+
+BGFX_C_API bgfx_render_frame_t bgfx_render_frame()
+{
+	return bgfx_render_frame_t(bgfx::renderFrame() );
+}
+
+#if BX_PLATFORM_ANDROID
+BGFX_C_API void bgfx_android_set_window(ANativeWindow* _window)
+{
+	bgfx::androidSetWindow(_window);
+}
+
+#elif BX_PLATFORM_IOS
+BGFX_C_API void bgfx_ios_set_eagl_layer(void* _layer)
+{
+	bgfx::iosSetEaglLayer(_layer);
+}
+
+#elif BX_PLATFORM_LINUX
+BGFX_C_API void bgfx_x11_set_display_window(::Display* _display, ::Window _window)
+{
+	bgfx::x11SetDisplayWindow(_display, _window);
+}
+
+#elif BX_PLATFORM_NACL
+BGFX_C_API bool bgfx_nacl_set_interfaces(PP_Instance _instance, const PPB_Instance* _instInterface, const PPB_Graphics3D* _graphicsInterface, bgfx_post_swap_buffers_fn _postSwapBuffers)
+{
+	return bgfx::naclSetInterfaces(_instance, _instInterface, _graphicsInterface, _postSwapBuffers);
+}
+
+#elif BX_PLATFORM_OSX
+BGFX_C_API void bgfx_osx_set_ns_window(void* _window)
+{
+	bgfx::osxSetNSWindow(_window);
+}
+
+#elif BX_PLATFORM_WINDOWS
+BGFX_C_API void bgfx_win_set_hwnd(HWND _window)
+{
+	bgfx::winSetHwnd(_window);
+}
+
+#endif // BX_PLATFORM_*
 /*
  * Copyright 2011-2014 Branimir Karadzic. All rights reserved.
  * License: http://www.opensource.org/licenses/BSD-2-Clause
@@ -4115,7 +4161,7 @@ namespace bgfx
 						{ \
 							BX_TRACE("wgl %p " #_func " (" #_import ")", _func); \
 						} \
-						BGFX_FATAL(_optional || NULL != _func, Fatal::UnableToInitialize, "Failed to create OpenGL context. wglGetProcAddress(\"%s\")", #_import); \
+						BGFX_FATAL(BX_IGNORE_C4127(_optional) || NULL != _func, Fatal::UnableToInitialize, "Failed to create OpenGL context. wglGetProcAddress(\"%s\")", #_import); \
 					} \
 				}
 #	include "glimports.h"
@@ -5763,8 +5809,8 @@ namespace bgfx
 				// skip imageSize in KTX format.
 				offset += _imageContainer.m_ktx ? sizeof(uint32_t) : 0;
 
-				width  = bx::uint32_max(blockWidth,  width);
-				height = bx::uint32_max(blockHeight, height);
+				width  = bx::uint32_max(blockWidth,  ( (width +blockWidth -1)/blockWidth )*blockWidth);
+				height = bx::uint32_max(blockHeight, ( (height+blockHeight-1)/blockHeight)*blockHeight);
 				depth  = bx::uint32_max(1, depth);
 
 				uint32_t size = width*height*depth*bpp/8;
@@ -10075,7 +10121,7 @@ namespace bgfx
 
 			IDirect3DDevice9* device = m_device;
 
-			do
+			for (;;)
 			{
 				uint32_t opcode = _constantBuffer.read();
 
@@ -10184,7 +10230,7 @@ namespace bgfx
 
 #undef CASE_IMPLEMENT_UNIFORM
 
-			} while (true);
+			}
 		}
 
 #if BX_PLATFORM_WINDOWS
@@ -11840,7 +11886,7 @@ namespace bgfx
 						{
 							const VertexBufferD3D9& inst = m_vertexBuffers[state.m_instanceDataBuffer.idx];
 							DX_CHECK(device->SetStreamSourceFreq(0, D3DSTREAMSOURCE_INDEXEDDATA|state.m_numInstances) );
-							DX_CHECK(device->SetStreamSourceFreq(1, D3DSTREAMSOURCE_INSTANCEDATA|1) );
+							DX_CHECK(device->SetStreamSourceFreq(1, UINT(D3DSTREAMSOURCE_INSTANCEDATA|1) ) );
 							DX_CHECK(device->SetStreamSource(1, inst.m_ptr, state.m_instanceDataOffset, state.m_instanceDataStride) );
 
 							IDirect3DVertexDeclaration9* ptr = createVertexDeclaration(vertexDecl.m_decl, state.m_instanceDataStride/16);
@@ -13596,8 +13642,8 @@ namespace bgfx
 		void updateResolution(const Resolution& _resolution)
 		{
 			if (m_resolution.m_width != _resolution.m_width
-				||  m_resolution.m_height != _resolution.m_height
-				||  m_resolution.m_flags != _resolution.m_flags)
+			||  m_resolution.m_height != _resolution.m_height
+			||  m_resolution.m_flags != _resolution.m_flags)
 			{
 				m_textVideoMem.resize(false, _resolution.m_width, _resolution.m_height);
 				m_textVideoMem.clear();
@@ -13615,8 +13661,8 @@ namespace bgfx
 		uint32_t setFrameBuffer(FrameBufferHandle _fbh, uint32_t _height, bool _msaa = true)
 		{
 			if (isValid(m_fbh)
-				&&  m_fbh.idx != _fbh.idx
-				&&  m_rtMsaa)
+			&&  m_fbh.idx != _fbh.idx
+			&&  m_rtMsaa)
 			{
 				FrameBufferGL& frameBuffer = m_frameBuffers[m_fbh.idx];
 				frameBuffer.resolve();
@@ -13653,7 +13699,7 @@ namespace bgfx
 		void createMsaaFbo(uint32_t _width, uint32_t _height, uint32_t _msaa)
 		{
 			if (0 == m_msaaBackBufferFbo // iOS
-				&&  1 < _msaa)
+			&&  1 < _msaa)
 			{
 				GL_CHECK(glGenFramebuffers(1, &m_msaaBackBufferFbo) );
 				GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, m_msaaBackBufferFbo) );
@@ -13665,8 +13711,8 @@ namespace bgfx
 				GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, m_msaaBackBufferRbos[0]) );
 
 				GLenum attachment = BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL) || BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 30) 
-					? GL_DEPTH_ATTACHMENT 
-					: GL_DEPTH_STENCIL_ATTACHMENT
+					? GL_DEPTH_STENCIL_ATTACHMENT
+					: GL_DEPTH_ATTACHMENT 
 					;
 				GL_CHECK(glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, m_msaaBackBufferRbos[1]) );
 
@@ -13682,7 +13728,7 @@ namespace bgfx
 		void destroyMsaaFbo()
 		{
 			if (m_backBufferFbo != m_msaaBackBufferFbo // iOS
-				&&  0 != m_msaaBackBufferFbo)
+			&&  0 != m_msaaBackBufferFbo)
 			{
 				GL_CHECK(glDeleteFramebuffers(1, &m_msaaBackBufferFbo) );
 				GL_CHECK(glDeleteRenderbuffers(BX_COUNTOF(m_msaaBackBufferRbos), m_msaaBackBufferRbos) );
@@ -13693,7 +13739,7 @@ namespace bgfx
 		void blitMsaaFbo()
 		{
 			if (m_backBufferFbo != m_msaaBackBufferFbo // iOS
-				&&  0 != m_msaaBackBufferFbo)
+			&&  0 != m_msaaBackBufferFbo)
 			{
 				GL_CHECK(glDisable(GL_SCISSOR_TEST) );
 				GL_CHECK(glBindFramebuffer(GL_FRAMEBUFFER, m_backBufferFbo) );
@@ -13723,7 +13769,7 @@ namespace bgfx
 		void setRenderContextSize(uint32_t _width, uint32_t _height, uint32_t _msaa = 0, bool _vsync = false)
 		{
 			if (_width != 0
-				||  _height != 0)
+			||  _height != 0)
 			{
 				if (!m_glctx.isValid() )
 				{
@@ -13756,7 +13802,7 @@ namespace bgfx
 			}
 
 			if ( (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL) ||  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 30) )
-				&&  m_samplerObjectSupport)
+			&&  m_samplerObjectSupport)
 			{
 				m_samplerStateCache.invalidate();
 			}
@@ -13765,7 +13811,7 @@ namespace bgfx
 		void setSamplerState(uint32_t _stage, uint32_t _numMips, uint32_t _flags)
 		{
 			if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGL)
-				||  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 30) )
+			||  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 30) )
 			{
 				if (0 == (BGFX_SAMPLER_DEFAULT_FLAGS & _flags) )
 				{
@@ -13789,13 +13835,13 @@ namespace bgfx
 						GL_CHECK(glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, s_textureFilterMag[mag]) );
 						GL_CHECK(glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, minFilter) );
 						if (0 != (_flags & (BGFX_TEXTURE_MIN_ANISOTROPIC|BGFX_TEXTURE_MAG_ANISOTROPIC) )
-							&&  0.0f < m_maxAnisotropy)
+						&&  0.0f < m_maxAnisotropy)
 						{
 							GL_CHECK(glSamplerParameterf(sampler, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxAnisotropy) );
 						}
 
 						if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES >= 30)
-							||  m_shadowSamplersSupport)
+						||  m_shadowSamplersSupport)
 						{
 							const uint32_t cmpFunc = (_flags&BGFX_TEXTURE_COMPARE_MASK)>>BGFX_TEXTURE_COMPARE_SHIFT;
 							if (0 == cmpFunc)
@@ -13924,7 +13970,7 @@ namespace bgfx
 		{
 			_constantBuffer.reset();
 
-			do
+			for (;;)
 			{
 				uint32_t opcode = _constantBuffer.read();
 
@@ -14000,7 +14046,7 @@ namespace bgfx
 #undef CASE_IMPLEMENT_UNIFORM
 #undef CASE_IMPLEMENT_UNIFORM_T
 
-			} while (true);
+			}
 		}
 
 		void clearQuad(ClearQuad& _clearQuad, const Rect& _rect, const Clear& _clear, uint32_t _height)
@@ -14931,7 +14977,7 @@ namespace bgfx
 			&& GL_RGBA == m_fmt
 			&& !s_renderGL->m_textureSwizzleSupport
 			;
-		const bool unpackRowLength = !!BGFX_CONFIG_RENDERER_OPENGL || s_extension[Extension::EXT_unpack_subimage].m_supported;
+		const bool unpackRowLength = BX_IGNORE_C4127(!!BGFX_CONFIG_RENDERER_OPENGL || s_extension[Extension::EXT_unpack_subimage].m_supported);
 		const bool convert         = m_textureFormat != m_requestedFormat;
 		const bool compressed      = isCompressed(TextureFormat::Enum(m_textureFormat) );
 
@@ -15189,6 +15235,12 @@ namespace bgfx
 				if (BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES)
 				&&  BX_ENABLED(BGFX_CONFIG_RENDERER_OPENGLES < 30) )
 				{
+					writeString(&writer
+						, "#define flat\n"
+						  "#define smooth\n"
+						  "#define noperspective\n"
+						);
+
 					bool usesDerivatives = s_extension[Extension::OES_standard_derivatives].m_supported 
 						&& bx::findIdentifierMatch(code, s_OES_standard_derivatives)
 						;
@@ -15329,6 +15381,9 @@ namespace bgfx
 							, "#define lowp\n"
 							  "#define mediump\n"
 							  "#define highp\n"
+							  "#define flat\n"
+							  "#define smooth\n"
+							  "#define noperspective\n"
 							);
 
 					bx::write(&writer, code, codeLen);
