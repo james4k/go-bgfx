@@ -18,6 +18,7 @@ const (
 const (
 	StateCullCW State = 0x0000001000000000 << iota
 	StateCullCCW
+	StateCullMask = StateCullCW | StateCullCCW
 )
 
 const (

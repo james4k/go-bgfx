@@ -41,6 +41,10 @@ func SetUniform(u Uniform, ptr interface{}, num int) {
 	C.bgfx_set_uniform(u.h, unsafe.Pointer(val.Pointer()), C.uint16_t(num))
 }
 
+func SetTexture(stage uint8, u Uniform, t Texture) {
+	C.bgfx_set_texture(C.uint8_t(stage), u.h, t.h, C.UINT32_MAX)
+}
+
 func SetState(state State) {
 	C.bgfx_set_state(C.uint64_t(state), 0)
 }
