@@ -227,16 +227,197 @@ const (
 	TextureCompareAlways
 )
 
+type TextureFormat uint8
+
+const (
+	TextureFormatBC1 TextureFormat = iota
+	TextureFormatBC2
+	TextureFormatBC3
+	TextureFormatBC4
+	TextureFormatBC5
+	TextureFormatETC1
+	TextureFormatETC2
+	TextureFormatETC2A
+	TextureFormatETC2A1
+	TextureFormatPTC12
+	TextureFormatPTC14
+	TextureFormatPTC12A
+	TextureFormatPTC14A
+	TextureFormatPTC22
+	TextureFormatPTC24
+
+	TextureFormatUnknown
+
+	TextureFormatR8
+	TextureFormatR16
+	TextureFormatR16F
+	TextureFormatBGRA8
+	TextureFormatRGBA16
+	TextureFormatRGBA16F
+	TextureFormatR5G6B5
+	TextureFormatRGBA4
+	TextureFormatRGB5A1
+	TextureFormatRGB10A2
+
+	TextureFormatUnknownDepth
+
+	TextureFormatD16
+	TextureFormatD24
+	TextureFormatD24S8
+	TextureFormatD32
+	TextureFormatD16F
+	TextureFormatD24F
+	TextureFormatD32F
+	TextureFormatD0S8
+)
+
 type Texture struct {
 	h C.bgfx_texture_handle_t
 }
 
-func CreateTexture(data []byte, flags TextureFlags, skip uint8) Texture {
+type TextureInfo struct {
+	Format       TextureFormat
+	StorageSize  uint32
+	Width        uint16
+	Height       uint16
+	Depth        uint16
+	NumMips      uint8
+	BitsPerPixel uint8
+}
+
+func newTextureInfo(ti C.bgfx_texture_info_t) TextureInfo {
+	return TextureInfo{
+		Format:       TextureFormat(ti.format),
+		StorageSize:  uint32(ti.storageSize),
+		Width:        uint16(ti.width),
+		Height:       uint16(ti.height),
+		Depth:        uint16(ti.depth),
+		NumMips:      uint8(ti.numMips),
+		BitsPerPixel: uint8(ti.bitsPerPixel),
+	}
+}
+
+func CreateTexture(data []byte, flags TextureFlags, skip uint8) (Texture, TextureInfo) {
+	var ti C.bgfx_texture_info_t
 	h := C.bgfx_create_texture(
 		C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data))),
 		C.uint32_t(flags),
 		C.uint8_t(skip),
-		nil,
+		&ti,
+	)
+	return Texture{h: h}, newTextureInfo(ti)
+}
+
+func CreateTexture2D(width, height, numMips int, format TextureFormat, flags TextureFlags, data []byte) Texture {
+	var mem *C.bgfx_memory_t
+	if data != nil {
+		mem = C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)))
+	}
+	h := C.bgfx_create_texture_2d(
+		C.uint16_t(width),
+		C.uint16_t(height),
+		C.uint8_t(numMips),
+		C.bgfx_texture_format_t(format),
+		C.uint32_t(flags),
+		mem,
 	)
 	return Texture{h: h}
+}
+
+func CreateTexture3D(width, height, depth, numMips int, format TextureFormat, flags TextureFlags, data []byte) Texture {
+	var mem *C.bgfx_memory_t
+	if data != nil {
+		mem = C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)))
+	}
+	h := C.bgfx_create_texture_3d(
+		C.uint16_t(width),
+		C.uint16_t(height),
+		C.uint16_t(depth),
+		C.uint8_t(numMips),
+		C.bgfx_texture_format_t(format),
+		C.uint32_t(flags),
+		mem,
+	)
+	return Texture{h: h}
+}
+
+func CreateTextureCube(size, numMips int, format TextureFormat, flags TextureFlags, data []byte) Texture {
+	var mem *C.bgfx_memory_t
+	if data != nil {
+		mem = C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)))
+	}
+	h := C.bgfx_create_texture_cube(
+		C.uint16_t(size),
+		C.uint8_t(numMips),
+		C.bgfx_texture_format_t(format),
+		C.uint32_t(flags),
+		mem,
+	)
+	return Texture{h: h}
+}
+
+func DestroyTexture(t Texture) {
+	C.bgfx_destroy_texture(t.h)
+}
+
+func CalcTextureSize(width, height, depth, numMips int, format TextureFormat) TextureInfo {
+	var ti C.bgfx_texture_info_t
+	C.bgfx_calc_texture_size(
+		&ti,
+		C.uint16_t(width),
+		C.uint16_t(height),
+		C.uint16_t(depth),
+		C.uint8_t(numMips),
+		C.bgfx_texture_format_t(format),
+	)
+	return newTextureInfo(ti)
+}
+
+func UpdateTextureCube(t Texture, side, mip, x, y, width, height int, data []byte, pitch int) {
+	if pitch == 0 {
+		pitch = 0xffff
+	}
+	C.bgfx_update_texture_cube(
+		t.h,
+		C.uint8_t(side),
+		C.uint8_t(mip),
+		C.uint16_t(x),
+		C.uint16_t(y),
+		C.uint16_t(width),
+		C.uint16_t(height),
+		// to keep things simple and safe, just copy for now
+		C.bgfx_copy(
+			unsafe.Pointer(&data[0]),
+			C.uint32_t(len(data)),
+		),
+		C.uint16_t(pitch),
+	)
+}
+
+type FrameBuffer struct {
+	h C.bgfx_frame_buffer_handle_t
+}
+
+func CreateFrameBuffer(width, height int, format TextureFormat, flags TextureFlags) FrameBuffer {
+	h := C.bgfx_create_frame_buffer(
+		C.uint16_t(width),
+		C.uint16_t(height),
+		C.bgfx_texture_format_t(format),
+		C.uint32_t(flags),
+	)
+	return FrameBuffer{h: h}
+}
+
+func CreateFrameBufferFromTextures(textures []Texture, destroyTextures bool) FrameBuffer {
+	h := C.bgfx_create_frame_buffer_from_handles(
+		C.uint8_t(len(textures)),
+		//(*C.bgfx_texture_handle_t)(unsafe.Pointer(&textures[0])),
+		&textures[0].h,
+		C._Bool(destroyTextures),
+	)
+	return FrameBuffer{h: h}
+}
+
+func DestroyFrameBuffer(fb FrameBuffer) {
+	C.bgfx_destroy_frame_buffer(fb.h)
 }

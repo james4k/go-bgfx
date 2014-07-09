@@ -45,6 +45,10 @@ func SetTexture(stage uint8, u Uniform, t Texture) {
 	C.bgfx_set_texture(C.uint8_t(stage), u.h, t.h, C.UINT32_MAX)
 }
 
+func SetTextureFromFrameBuffer(stage uint8, u Uniform, fb FrameBuffer) {
+	C.bgfx_set_texture_from_frame_buffer(C.uint8_t(stage), u.h, fb.h, 0, C.UINT32_MAX)
+}
+
 func SetState(state State) {
 	C.bgfx_set_state(C.uint64_t(state), 0)
 }
