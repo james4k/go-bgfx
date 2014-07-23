@@ -1,13 +1,5 @@
 package bgfx_glfw
 
-// #cgo darwin LDFLAGS: -lglfw3 -framework Cocoa -framework OpenGL
-// #cgo darwin LDFLAGS: -framework IOKit -framework CoreVideo
-// #define GLFW_EXPOSE_NATIVE_COCOA
-// #define GLFW_EXPOSE_NATIVE_NSGL
-// #include <GLFW/glfw3.h>
-// #include <GLFW/glfw3native.h>
-import "C"
-
 import (
 	"unsafe"
 
@@ -16,7 +8,6 @@ import (
 )
 
 func SetWindow(wnd *glfw.Window) {
-	cwnd := *(*unsafe.Pointer)(unsafe.Pointer(wnd))
-	nswnd := C.glfwGetNSGLContext((*C.GLFWwindow)(cwnd))
+	nswnd := wnd.GetNSGLContext()
 	bgfx.SetCocoaWindow(uintptr(unsafe.Pointer(nswnd)))
 }
