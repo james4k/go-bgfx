@@ -25,7 +25,7 @@ done
 # concatenate all *.m (obj-c) files into one
 echo "// Generate file with prepare.sh" > bgfx.m
 for file in `ls shim/*.m`; do
-	cat $file >> bgfx.m
+	cat $file >> bgfx_darwin.m
 done
 
 # copy LICENSE file

@@ -1,11 +1,11 @@
 package bgfx
 
 /*
-#cgo CPPFLAGS: -I include
+#cgo CPPFLAGS: -I include -msse2
+#cgo CXXFLAGS: -fno-rtti -fno-exceptions
 #cgo darwin CPPFLAGS: -I include/compat/osx
 #cgo darwin LDFLAGS: -framework Cocoa -framework OpenGL
 #cgo linux LDFLAGS: -lGL
-#cgo windows LDFLAGS: -lopengl32
 #include "bgfx.c99.h"
 #include "bridge.h"
 */
