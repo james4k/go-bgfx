@@ -5,7 +5,6 @@ import "C"
 import "unsafe"
 
 type ViewID int8
-type ViewMask uint32
 
 type ClearOptions uint8
 
@@ -25,27 +24,9 @@ func SetViewRect(view ViewID, x, y, w, h int) {
 	)
 }
 
-func SetViewRectMask(mask ViewMask, x, y, w, h int) {
-	C.bgfx_set_view_rect_mask(
-		C.uint32_t(mask),
-		C.uint16_t(x),
-		C.uint16_t(y),
-		C.uint16_t(w),
-		C.uint16_t(h),
-	)
-}
-
 func SetViewTransform(viewID ViewID, view, proj [16]float32) {
 	C.bgfx_set_view_transform(
 		C.uint8_t(viewID),
-		unsafe.Pointer(&view[0]),
-		unsafe.Pointer(&proj[0]),
-	)
-}
-
-func SetViewTransformMask(mask ViewMask, view, proj [16]float32) {
-	C.bgfx_set_view_transform_mask(
-		C.uint32_t(mask),
 		unsafe.Pointer(&view[0]),
 		unsafe.Pointer(&proj[0]),
 	)
@@ -64,13 +45,6 @@ func SetViewClear(view ViewID, clear ClearOptions, rgba uint32, depth float32, s
 func SetViewFrameBuffer(view ViewID, fb FrameBuffer) {
 	C.bgfx_set_view_frame_buffer(
 		C.uint8_t(view),
-		fb.h,
-	)
-}
-
-func SetViewFrameBufferMask(mask ViewMask, fb FrameBuffer) {
-	C.bgfx_set_view_frame_buffer_mask(
-		C.uint32_t(mask),
 		fb.h,
 	)
 }

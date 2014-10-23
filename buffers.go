@@ -3,8 +3,6 @@ package bgfx
 // #include "bgfx.c99.h"
 import "C"
 import (
-	"bytes"
-	"encoding/binary"
 	"errors"
 	"io"
 	"reflect"
@@ -17,6 +15,7 @@ const (
 	AttribPosition Attrib = iota
 	AttribNormal
 	AttribTangent
+	AttribBitangent
 	AttribColor0
 	AttribColor1
 	AttribIndices
@@ -69,27 +68,6 @@ func (v *VertexDecl) End() {
 
 func (v *VertexDecl) Stride() int {
 	return int(v.decl.stride)
-}
-
-func (v *VertexDecl) UnmarshalBinary(data []byte) error {
-	r := bytes.NewReader(data)
-	err := binary.Read(r, binary.LittleEndian, &v.decl.hash)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(r, binary.LittleEndian, &v.decl.stride)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(r, binary.LittleEndian, &v.decl.offset)
-	if err != nil {
-		return err
-	}
-	err = binary.Read(r, binary.LittleEndian, &v.decl.attributes)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 type VertexBuffer struct {

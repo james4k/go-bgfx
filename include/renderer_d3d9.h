@@ -47,6 +47,11 @@ typedef IDirect3D9* (WINAPI *Direct3DCreate9Fn)(UINT SDKVersion);
 
 namespace bgfx
 {
+#	if defined(D3D_DISABLE_9EX)
+#		define D3DFMT_S8_LOCKABLE D3DFORMAT( 85)
+#		define D3DFMT_A1          D3DFORMAT(118)
+#	endif // defined(D3D_DISABLE_9EX)
+
 #	ifndef D3DFMT_ATI1
 #		define D3DFMT_ATI1 ( (D3DFORMAT)BX_MAKEFOURCC('A', 'T', 'I', '1') )
 #	endif // D3DFMT_ATI1
@@ -197,9 +202,9 @@ namespace bgfx
 		bool m_dynamic;
 	};
 
-	struct VertexDeclaration
+	struct VertexDeclD3D9
 	{
-		VertexDeclaration()
+		VertexDeclD3D9()
 			: m_ptr(NULL)
 		{
 		}
@@ -218,9 +223,10 @@ namespace bgfx
 	struct ShaderD3D9
 	{
 		ShaderD3D9()
-			: m_ptr(NULL)
+			: m_vertexShader(NULL)
 			, m_constantBuffer(NULL)
 			, m_numPredefined(0)
+			, m_type(0)
 		{
 		}
 
@@ -236,23 +242,33 @@ namespace bgfx
 			}
 			m_numPredefined = 0;
 
-			DX_RELEASE(m_ptr, 0);
+			switch (m_type)
+			{
+			case 0:  DX_RELEASE(m_vertexShader, 0);
+			default: DX_RELEASE(m_pixelShader,  0);
+			}
 		}
 
-		IUnknown* m_ptr;
+		union
+		{
+			// X360 doesn't have interface inheritance (can't use IUnknown*).
+			IDirect3DVertexShader9* m_vertexShader;
+			IDirect3DPixelShader9*  m_pixelShader;
+		};
 		ConstantBuffer* m_constantBuffer;
 		PredefinedUniform m_predefined[PredefinedUniform::Count];
 		uint8_t m_numPredefined;
+		uint8_t m_type;
 	};
 
 	struct ProgramD3D9
 	{
 		void create(const ShaderD3D9& _vsh, const ShaderD3D9& _fsh)
 		{
-			BX_CHECK(NULL != _vsh.m_ptr, "Vertex shader doesn't exist.");
+			BX_CHECK(NULL != _vsh.m_vertexShader, "Vertex shader doesn't exist.");
 			m_vsh = &_vsh;
 
-			BX_CHECK(NULL != _fsh.m_ptr, "Fragment shader doesn't exist.");
+			BX_CHECK(NULL != _fsh.m_pixelShader, "Fragment shader doesn't exist.");
 			m_fsh = &_fsh;
 
 			memcpy(&m_predefined[0], _vsh.m_predefined, _vsh.m_numPredefined*sizeof(PredefinedUniform) );
@@ -318,10 +334,10 @@ namespace bgfx
 	
 		union
 		{
-			IDirect3DBaseTexture9* m_ptr;
-			IDirect3DTexture9* m_texture2d;
+			IDirect3DBaseTexture9*   m_ptr;
+			IDirect3DTexture9*       m_texture2d;
 			IDirect3DVolumeTexture9* m_texture3d;
-			IDirect3DCubeTexture9* m_textureCube;
+			IDirect3DCubeTexture9*   m_textureCube;
 		};
 
 		IDirect3DSurface9* m_surface;
@@ -337,14 +353,18 @@ namespace bgfx
 	struct FrameBufferD3D9
 	{
 		FrameBufferD3D9()
-			: m_num(0)
+			: m_hwnd(NULL)
+			, m_denseIdx(UINT16_MAX)
+			, m_num(0)
 			, m_needResolve(0)
 		{
 			m_depthHandle.idx = invalidHandle;
 		}
 
 		void create(uint8_t _num, const TextureHandle* _handles);
-		void destroy();
+		void create(uint16_t _denseIdx, void* _nwh, uint32_t _width, uint32_t _height, TextureFormat::Enum _depthFormat);
+		uint16_t destroy();
+		HRESULT present();
 		void resolve() const;
 		void preReset();
 		void postReset();
@@ -352,8 +372,12 @@ namespace bgfx
 
 		IDirect3DSurface9* m_color[BGFX_CONFIG_MAX_FRAME_BUFFER_ATTACHMENTS-1];
 		IDirect3DSurface9* m_depthStencil;
+		IDirect3DSwapChain9* m_swapChain;
+		HWND m_hwnd;
+
 		TextureHandle m_colorHandle[BGFX_CONFIG_MAX_FRAME_BUFFER_ATTACHMENTS-1];
 		TextureHandle m_depthHandle;
+		uint16_t m_denseIdx;
 		uint8_t m_num;
 		bool m_needResolve;
 	};

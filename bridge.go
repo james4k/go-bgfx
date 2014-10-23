@@ -46,56 +46,98 @@ const (
 	RendererTypeNull RendererType = iota
 	RendererTypeDirect3D9
 	RendererTypeDirect3D11
+	_
 	RendererTypeOpenGLES
 	RendererTypeOpenGL
+)
+
+type TextureFormat uint8
+
+const (
+	TextureFormatBC1 TextureFormat = iota
+	TextureFormatBC2
+	TextureFormatBC3
+	TextureFormatBC4
+	TextureFormatBC5
+	TextureFormatBC6H
+	TextureFormatBC7
+	TextureFormatETC1
+	TextureFormatETC2
+	TextureFormatETC2A
+	TextureFormatETC2A1
+	TextureFormatPTC12
+	TextureFormatPTC14
+	TextureFormatPTC12A
+	TextureFormatPTC14A
+	TextureFormatPTC22
+	TextureFormatPTC24
+
+	TextureFormatUnknown
+
+	TextureFormatR1
+	TextureFormatR8
+	TextureFormatR16
+	TextureFormatR16F
+	TextureFormatR32
+	TextureFormatR32F
+	TextureFormatRG8
+	TextureFormatRG16
+	TextureFormatRG16F
+	TextureFormatRG32
+	TextureFormatRG32F
+	TextureFormatBGRA8
+	TextureFormatRGBA16
+	TextureFormatRGBA16F
+	TextureFormatRGBA32
+	TextureFormatRGBA32F
+	TextureFormatR5G6B5
+	TextureFormatRGBA4
+	TextureFormatRGB5A1
+	TextureFormatRGB10A2
+	TextureFormatR11G11B10F
+
+	TextureFormatUnknownDepth
+
+	TextureFormatD16
+	TextureFormatD24
+	TextureFormatD24S8
+	TextureFormatD32
+	TextureFormatD16F
+	TextureFormatD24F
+	TextureFormatD32F
+	TextureFormatD0S8
+
+	TextureFormatCount
 )
 
 type CapFlags uint64
 
 const (
-	CapsTextureFormatBC1 CapFlags = 1 << iota
-	CapsTextureFormatBC2
-	CapsTextureFormatBC3
-	CapsTextureFormatBC4
-	CapsTextureFormatBC5
-	CapsTextureFormatETC1
-	CapsTextureFormatETC2
-	CapsTextureFormatETC2A
-	CapsTextureFormatETC2A1
-	CapsTextureFormatPTC12
-	CapsTextureFormatPTC14
-	CapsTextureFormatPTC14A
-	CapsTextureFormatPTC12A
-	CapsTextureFormatPTC22
-	CapsTextureFormatPTC24
-	CapsTextureFormatD16
-	CapsTextureFormatD24
-	CapsTextureFormatD24S8
-	CapsTextureFormatD32
-	CapsTextureFormatD16F
-	CapsTextureFormatD24F
-	CapsTextureFormatD32F
-	CapsTextureFormatD0S8
-	CapsTextureCompareLEqual = 0x0000000001000000
-	CapsTextureCompareAll    = 0x0000000003000000
+	CapsTextureCompareLEqual CapFlags = 0x0000000000000001
+	CapsTextureCompareAll             = 0x0000000000000003
 )
 
 const (
-	CapsTexture3D CapFlags = 0x0000000004000000 << iota
+	CapsTexture3D = 0x0000000000000004 << iota
 	CapsVertexAttribHalf
 	CapsInstancing
 	CapsRendererMultithreaded
 	CapsFragmentDepth
 	CapsBlendIndependent
+	CapsCompute
+	CapsFragmentOrdering
+	CapsSwapChain
 )
 
 type Capabilities struct {
 	RendererType     RendererType
 	Supported        CapFlags
-	Emulated         CapFlags
 	MaxTextureSize   uint16
 	MaxDrawCalls     uint16
 	MaxFBAttachments uint8
+
+	// 0=unsupported, 1=supported, 2=emulated
+	Formats [TextureFormatCount]uint8
 }
 
 // Caps returns renderer capabilities. Note that the library must be
@@ -105,10 +147,10 @@ func Caps() Capabilities {
 	return Capabilities{
 		RendererType:     RendererType(caps.rendererType),
 		Supported:        CapFlags(caps.supported),
-		Emulated:         CapFlags(caps.emulated),
 		MaxTextureSize:   uint16(caps.maxTextureSize),
 		MaxDrawCalls:     uint16(caps.maxDrawCalls),
 		MaxFBAttachments: uint8(caps.maxFBAttachments),
+		Formats:          *(*[C.BGFX_TEXTURE_FORMAT_COUNT]uint8)(unsafe.Pointer(&caps.formats)),
 	}
 }
 
@@ -225,50 +267,6 @@ const (
 	TextureCompareNotEqual
 	TextureCompareNever
 	TextureCompareAlways
-)
-
-type TextureFormat uint8
-
-const (
-	TextureFormatBC1 TextureFormat = iota
-	TextureFormatBC2
-	TextureFormatBC3
-	TextureFormatBC4
-	TextureFormatBC5
-	TextureFormatETC1
-	TextureFormatETC2
-	TextureFormatETC2A
-	TextureFormatETC2A1
-	TextureFormatPTC12
-	TextureFormatPTC14
-	TextureFormatPTC12A
-	TextureFormatPTC14A
-	TextureFormatPTC22
-	TextureFormatPTC24
-
-	TextureFormatUnknown
-
-	TextureFormatR8
-	TextureFormatR16
-	TextureFormatR16F
-	TextureFormatBGRA8
-	TextureFormatRGBA16
-	TextureFormatRGBA16F
-	TextureFormatR5G6B5
-	TextureFormatRGBA4
-	TextureFormatRGB5A1
-	TextureFormatRGB10A2
-
-	TextureFormatUnknownDepth
-
-	TextureFormatD16
-	TextureFormatD24
-	TextureFormatD24S8
-	TextureFormatD32
-	TextureFormatD16F
-	TextureFormatD24F
-	TextureFormatD32F
-	TextureFormatD0S8
 )
 
 type Texture struct {

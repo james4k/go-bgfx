@@ -18,6 +18,26 @@ namespace bgfx
 #	define GL_IMPORT(_optional, _proto, _func, _import) _proto _func
 #	include "glimports.h"
 	
+	struct SwapChainGL
+	{
+		SwapChainGL(void* _nwh)
+		{
+			BX_UNUSED(_nwh);
+		}
+
+		~SwapChainGL()
+		{
+		}
+
+		void makeCurrent()
+		{
+		}
+
+		void swapBuffers()
+		{
+		}
+	};
+	
 	static void* s_opengl = NULL;
 
 	extern "C"
@@ -56,9 +76,43 @@ namespace bgfx
 		bgfx_GlContext_resize((GlCtx*)this, _width, _height, _vsync);
 	}
 
-	void GlContext::swap()
+	bool GlContext::isSwapChainSupported()
 	{
-		bgfx_GlContext_swap((GlCtx*)this);
+		return false;
+	}
+
+	SwapChainGL* GlContext::createSwapChain(void* _nwh)
+	{
+		return BX_NEW(g_allocator, SwapChainGL)(_nwh);
+	}
+
+	void GlContext::destorySwapChain(SwapChainGL* _swapChain)
+	{
+		BX_DELETE(g_allocator, _swapChain);
+	}
+
+	void GlContext::swap(SwapChainGL* _swapChain)
+	{
+		if (NULL == _swapChain)
+		{
+			bgfx_GlContext_swap((GlCtx*)this);
+		}
+		else
+		{
+			_swapChain->makeCurrent();
+			_swapChain->swapBuffers();
+		}
+	}
+
+	void GlContext::makeCurrent(SwapChainGL* _swapChain)
+	{
+		if (NULL == _swapChain)
+		{
+		}
+		else
+		{
+			_swapChain->makeCurrent();
+		}
 	}
 
 	void GlContext::import()

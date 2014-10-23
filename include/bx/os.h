@@ -8,17 +8,19 @@
 
 #include "bx.h"
 
-#if BX_PLATFORM_WINDOWS
+#if BX_PLATFORM_WINDOWS || BX_PLATFORM_WINRT
 #	include <windows.h>
-#elif BX_PLATFORM_NACL \
-	|| BX_PLATFORM_ANDROID \
-	|| BX_PLATFORM_LINUX \
-	|| BX_PLATFORM_OSX \
+#elif BX_PLATFORM_ANDROID \
+	|| BX_PLATFORM_EMSCRIPTEN \
+	|| BX_PLATFORM_FREEBSD \
 	|| BX_PLATFORM_IOS \
-	|| BX_PLATFORM_EMSCRIPTEN
+	|| BX_PLATFORM_LINUX \
+	|| BX_PLATFORM_NACL \
+	|| BX_PLATFORM_OSX \
+	|| BX_PLATFORM_RPI
 
 #	include <sched.h> // sched_yield
-#	if BX_PLATFORM_IOS || BX_PLATFORM_OSX || BX_PLATFORM_NACL
+#	if BX_PLATFORM_FREEBSD || BX_PLATFORM_IOS || BX_PLATFORM_NACL || BX_PLATFORM_OSX
 #		include <pthread.h> // mach_port_t
 #	endif // BX_PLATFORM_IOS || BX_PLATFORM_OSX || BX_PLATFORM_NACL
 
@@ -29,15 +31,21 @@
 #		include <dlfcn.h> // dlopen, dlclose, dlsym
 #	endif // BX_PLATFORM_NACL
 
-#	if BX_PLATFORM_LINUX
+#	if BX_PLATFORM_LINUX || BX_PLATFORM_RPI
 #		include <unistd.h> // syscall
 #		include <sys/syscall.h>
-#	endif // BX_PLATFORM_LINUX
+#	endif // BX_PLATFORM_LINUX || BX_PLATFORM_RPI
 
 #	if BX_PLATFORM_ANDROID
 #		include "debug.h" // getTid is not implemented...
 #	endif // BX_PLATFORM_ANDROID
 #endif // BX_PLATFORM_
+
+#if BX_COMPILER_MSVC
+#	include <direct.h> // _getcwd
+#else
+#	include <unistd.h> // getcwd
+#endif // BX_COMPILER_MSVC
 
 namespace bx
 {
@@ -45,6 +53,9 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS || BX_PLATFORM_XBOX360
 		::Sleep(_ms);
+#elif BX_PLATFORM_WINRT
+		BX_UNUSED(_ms);
+		debugOutput("sleep is not implemented"); debugBreak();
 #else
 		timespec req = {(time_t)_ms/1000, (long)((_ms%1000)*1000000)};
 		timespec rem = {0, 0};
@@ -58,6 +69,8 @@ namespace bx
 		::SwitchToThread();
 #elif BX_PLATFORM_XBOX360
 		::Sleep(0);
+#elif BX_PLATFORM_WINRT
+		debugOutput("yield is not implemented"); debugBreak();
 #else
 		::sched_yield();
 #endif // BX_PLATFORM_
@@ -67,11 +80,11 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		return ::GetCurrentThreadId();
-#elif BX_PLATFORM_LINUX
+#elif BX_PLATFORM_LINUX || BX_PLATFORM_RPI
 		return (pid_t)::syscall(SYS_gettid);
 #elif BX_PLATFORM_IOS || BX_PLATFORM_OSX
 		return (mach_port_t)::pthread_mach_thread_np(pthread_self() );
-#elif BX_PLATFORM_NACL
+#elif BX_PLATFORM_FREEBSD || BX_PLATFORM_NACL
 		// Casting __nc_basic_thread_data*... need better way to do this.
 		return *(uint32_t*)::pthread_self();
 #else
@@ -85,7 +98,7 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		return (void*)::LoadLibraryA(_filePath);
-#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN
+#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN || BX_PLATFORM_WINRT
 		BX_UNUSED(_filePath);
 		return NULL;
 #else
@@ -97,7 +110,7 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		::FreeLibrary( (HMODULE)_handle);
-#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN
+#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN || BX_PLATFORM_WINRT
 		BX_UNUSED(_handle);
 #else
 		::dlclose(_handle);
@@ -108,7 +121,7 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		return (void*)::GetProcAddress( (HMODULE)_handle, _symbol);
-#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN
+#elif BX_PLATFORM_NACL || BX_PLATFORM_EMSCRIPTEN || BX_PLATFORM_WINRT
 		BX_UNUSED(_handle, _symbol);
 		return NULL;
 #else
@@ -120,6 +133,8 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		::SetEnvironmentVariableA(_name, _value);
+#elif BX_PLATFORM_WINRT
+		BX_UNUSED(_name, _value);
 #else
 		::setenv(_name, _value, 1);
 #endif // BX_PLATFORM_
@@ -129,9 +144,33 @@ namespace bx
 	{
 #if BX_PLATFORM_WINDOWS
 		::SetEnvironmentVariableA(_name, NULL);
+#elif BX_PLATFORM_WINRT
+		BX_UNUSED(_name);
 #else
 		::unsetenv(_name);
 #endif // BX_PLATFORM_
+	}
+
+	inline int chdir(const char* _path)
+	{
+#if BX_PLATFORM_WINRT
+		BX_UNUSED(_path);
+#elif BX_COMPILER_MSVC
+		return ::_chdir(_path);
+#else
+		return ::chdir(_path);
+#endif // BX_COMPILER_
+	}
+
+	inline char* pwd(char* _buffer, uint32_t _size)
+	{
+#if BX_PLATFORM_WINRT
+		BX_UNUSED(_buffer, _size);
+#elif BX_COMPILER_MSVC
+		return ::_getcwd(_buffer, (int)_size);
+#else
+		return ::getcwd(_buffer, _size);
+#endif // BX_COMPILER_
 	}
 
 } // namespace bx

@@ -8,7 +8,7 @@ fi
 
 # remove old generated files
 rm -rf include/*
-rm -f bgfx.cpp bgfx.m
+rm -f bgfx.cpp bgfx_darwin.m
 
 # copy includes
 cp -r lib/bgfx/include/* include/

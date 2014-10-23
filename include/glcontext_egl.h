@@ -12,6 +12,8 @@
 
 namespace bgfx
 {
+	struct SwapChainGL;
+
 	struct GlContext
 	{
 		GlContext()
@@ -24,7 +26,13 @@ namespace bgfx
 		void create(uint32_t _width, uint32_t _height);
 		void destroy();
 		void resize(uint32_t _width, uint32_t _height, bool _vsync);
-		void swap();
+
+		static bool isSwapChainSupported();
+		SwapChainGL* createSwapChain(void* _nwh);
+		void destorySwapChain(SwapChainGL*  _swapChain);
+		void swap(SwapChainGL* _swapChain = NULL);
+		void makeCurrent(SwapChainGL* _swapChain = NULL);
+
 		void import();
 
 		bool isValid() const
@@ -33,6 +41,7 @@ namespace bgfx
 		}
 
 		void* m_eglLibrary;
+		EGLConfig  m_config;
 		EGLContext m_context;
 		EGLDisplay m_display;
 		EGLSurface m_surface;
