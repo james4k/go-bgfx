@@ -23,7 +23,7 @@ for file in `ls lib/bgfx/src/*.cpp shim/*.cpp`; do
 done
 
 # concatenate all *.m (obj-c) files into one
-echo "// Generate file with prepare.sh" > bgfx.m
+echo "// Generate file with prepare.sh" > bgfx_darwin.m
 for file in `ls shim/*.m`; do
 	cat $file >> bgfx_darwin.m
 done

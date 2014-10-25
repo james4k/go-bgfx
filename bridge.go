@@ -235,8 +235,7 @@ func VertexConvert(destDecl, srcDecl VertexDecl, dest, src interface{}) {
 type TextureFlags uint32
 
 const (
-	TextureNone TextureFlags = 1 << iota
-	TextureUMirror
+	TextureUMirror TextureFlags = 1 << iota
 	TextureUClamp
 	TextureVMirror
 	TextureVClamp
@@ -250,7 +249,7 @@ const (
 )
 
 const (
-	TextureRT TextureFlags = 0x00001000 + iota
+	TextureRT TextureFlags = 0x00001000 + iota<<TextureRTMSAAShift
 	TextureRTMSAAX2
 	TextureRTMSAAX4
 	TextureRTMSAAX8
@@ -259,7 +258,7 @@ const (
 )
 
 const (
-	TextureCompareLess TextureFlags = 0x00010000 + iota
+	TextureCompareLess TextureFlags = 0x00010000 + iota<<TextureCompareShift
 	TextureCompareLEqual
 	TextureCompareEqual
 	TextureCompareGEqual
@@ -267,6 +266,36 @@ const (
 	TextureCompareNotEqual
 	TextureCompareNever
 	TextureCompareAlways
+)
+
+const (
+	TextureUShift       TextureFlags = 0
+	TextureVShift                    = 2
+	TextureWShift                    = 4
+	TextureMinShift                  = 6
+	TextureMagShift                  = 8
+	TextureMipShift                  = 10
+	TextureRTMSAAShift               = 12
+	TextureCompareShift              = 16
+
+	TextureUMask       = 0x03
+	TextureVMask       = 0x0c
+	TextureWMask       = 0x30
+	TextureMinMask     = 0xc0
+	TextureMagMask     = 0x300
+	TextureMipMask     = 0x400
+	TextureRTMSAAMask  = 0x7000
+	TextureRTMask      = 0xf000
+	TextureCompareMask = 0xf0000
+
+	TextureSamplerBitsMask = 0 |
+		TextureUMask |
+		TextureVMask |
+		TextureWMask |
+		TextureMinMask |
+		TextureMagMask |
+		TextureMipMask |
+		TextureCompareMask
 )
 
 type Texture struct {

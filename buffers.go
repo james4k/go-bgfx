@@ -58,7 +58,12 @@ func (v *VertexDecl) Add(attrib Attrib, num uint8, typ AttribType, normalized bo
 	)
 }
 
+func (v *VertexDecl) SetOffset(attrib Attrib, offset uint) {
+	v.decl.offset[attrib] = C.uint16_t(offset)
+}
+
 func (v *VertexDecl) Skip(num uint8) {
+
 	C.bgfx_vertex_decl_skip(&v.decl, C.uint8_t(num))
 }
 

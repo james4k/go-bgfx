@@ -25,10 +25,15 @@ const (
 	StateMSAA State = 0x1000000000000000
 )
 
+const (
+	StateBlendMask State = 0x000000000ffff000
+)
+
 type BlendValue uint32
 
+const BlendShift BlendValue = 12
 const (
-	BlendZero BlendValue = iota + 0x1000
+	BlendZero BlendValue = 0x1000 + iota<<BlendShift
 	BlendOne
 	BlendSrcColor
 	BlendInvSrcColor
@@ -44,9 +49,8 @@ const (
 )
 
 func BlendFuncSeparate(srcRGB, dstRGB, srcA, dstA BlendValue) State {
-	x := srcRGB | (dstRGB << 4)
-	x |= (srcA | (dstA << 4)) << 8
-	return State(x)
+	return (State(srcRGB) | (State(dstRGB) << 4)) |
+		((State(srcA) | (State(dstA) << 4)) << 8)
 }
 
 func BlendFunc(src, dst BlendValue) State {
