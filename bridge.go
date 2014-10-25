@@ -12,8 +12,21 @@ package bgfx
 import "C"
 import (
 	"errors"
+	"fmt"
+	"io"
 	"reflect"
 	"unsafe"
+)
+
+type RendererType uint32
+
+const (
+	RendererTypeNull RendererType = iota
+	RendererTypeDirect3D9
+	RendererTypeDirect3D11
+	_
+	RendererTypeOpenGLES
+	RendererTypeOpenGL
 )
 
 func Init() {
@@ -40,16 +53,32 @@ func Frame() uint32 {
 	return uint32(C.bgfx_frame())
 }
 
-type RendererType uint32
+type DebugOptions uint32
 
 const (
-	RendererTypeNull RendererType = iota
-	RendererTypeDirect3D9
-	RendererTypeDirect3D11
-	_
-	RendererTypeOpenGLES
-	RendererTypeOpenGL
+	DebugWireframe DebugOptions = 1 << iota
+	DebugIFH
+	DebugStats
+	DebugText
 )
+
+func SetDebug(f DebugOptions) {
+	C.bgfx_set_debug(C.uint32_t(f))
+}
+
+func DebugTextClear() {
+	C.bgfx_dbg_text_clear(0, false)
+}
+
+func DebugTextPrintf(x, y int, attr uint8, format string, args ...interface{}) {
+	text := []byte(fmt.Sprintf(format+"\x00", args...))
+	C.bgfx_dbg_text_print(
+		C.uint32_t(x),
+		C.uint32_t(y),
+		C.uint8_t(attr),
+		(*C.char)(unsafe.Pointer(&text[0])),
+	)
+}
 
 type TextureFormat uint8
 
@@ -447,4 +476,400 @@ func CreateFrameBufferFromTextures(textures []Texture, destroyTextures bool) Fra
 
 func DestroyFrameBuffer(fb FrameBuffer) {
 	C.bgfx_destroy_frame_buffer(fb.h)
+}
+
+type Attrib uint8
+
+const (
+	AttribPosition Attrib = iota
+	AttribNormal
+	AttribTangent
+	AttribBitangent
+	AttribColor0
+	AttribColor1
+	AttribIndices
+	AttribWeight
+	AttribTexcoord0
+	AttribTexcoord1
+	AttribTexcoord2
+	AttribTexcoord3
+	AttribTexcoord4
+	AttribTexcoord5
+	AttribTexcoord6
+	AttribTexcoord7
+)
+
+type AttribType uint8
+
+const (
+	AttribTypeUint8 AttribType = iota
+	AttribTypeInt16
+	AttribTypeHalf
+	AttribTypeFloat
+)
+
+type VertexDecl struct {
+	decl C.bgfx_vertex_decl_t
+}
+
+func (v *VertexDecl) Begin() {
+	C.bgfx_vertex_decl_begin(&v.decl, C.BGFX_RENDERER_TYPE_NULL)
+}
+
+func (v *VertexDecl) Add(attrib Attrib, num uint8, typ AttribType, normalized bool, asint bool) {
+	C.bgfx_vertex_decl_add(
+		&v.decl,
+		C.bgfx_attrib_t(attrib),
+		C.uint8_t(num),
+		C.bgfx_attrib_type_t(typ),
+		C._Bool(normalized),
+		C._Bool(asint),
+	)
+}
+
+func (v *VertexDecl) SetOffset(attrib Attrib, offset uint) {
+	v.decl.offset[attrib] = C.uint16_t(offset)
+}
+
+func (v *VertexDecl) Skip(num uint8) {
+
+	C.bgfx_vertex_decl_skip(&v.decl, C.uint8_t(num))
+}
+
+func (v *VertexDecl) End() {
+	C.bgfx_vertex_decl_end(&v.decl)
+}
+
+func (v *VertexDecl) Stride() int {
+	return int(v.decl.stride)
+}
+
+type VertexBuffer struct {
+	h C.bgfx_vertex_buffer_handle_t
+}
+
+func CreateVertexBuffer(slice interface{}, decl VertexDecl) VertexBuffer {
+	val := reflect.ValueOf(slice)
+	if val.Kind() != reflect.Slice {
+		panic(errors.New("bgfx: expected slice"))
+	}
+	size := uintptr(val.Len()) * val.Type().Elem().Size()
+	return VertexBuffer{
+		h: C.bgfx_create_vertex_buffer(
+			// to keep things simple for now, we'll just copy
+			C.bgfx_copy(unsafe.Pointer(val.Pointer()), C.uint32_t(size)),
+			&decl.decl,
+		),
+	}
+}
+
+func DestroyVertexBuffer(vb VertexBuffer) {
+	C.bgfx_destroy_vertex_buffer(vb.h)
+}
+
+type IndexBuffer struct {
+	h C.bgfx_index_buffer_handle_t
+}
+
+func CreateIndexBuffer(data []uint16) IndexBuffer {
+	return IndexBuffer{
+		h: C.bgfx_create_index_buffer(
+			// to keep things simple for now, we'll just copy
+			C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data)*2)),
+		),
+	}
+}
+
+func DestroyIndexBuffer(ib IndexBuffer) {
+	C.bgfx_destroy_index_buffer(ib.h)
+}
+
+type TransientVertexBuffer struct {
+	tvb C.bgfx_transient_vertex_buffer_t
+}
+
+func AllocTransientVertexBuffer(data interface{}, size int, decl VertexDecl) TransientVertexBuffer {
+	val := reflect.ValueOf(data)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		panic(errors.New("bgfx: expected pointer to slice"))
+	}
+	var tvb TransientVertexBuffer
+	C.bgfx_alloc_transient_vertex_buffer(
+		&tvb.tvb,
+		C.uint32_t(size),
+		&decl.decl,
+	)
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(val.Pointer()))
+	slice.Data = uintptr(unsafe.Pointer(tvb.tvb.data))
+	slice.Len = size
+	slice.Cap = size
+	return tvb
+}
+
+type TransientIndexBuffer struct {
+	tib C.bgfx_transient_index_buffer_t
+}
+
+func AllocTransientIndexBuffer(buf *[]uint16, num int) TransientIndexBuffer {
+	var tib TransientIndexBuffer
+	C.bgfx_alloc_transient_index_buffer(
+		&tib.tib,
+		C.uint32_t(num),
+	)
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(buf))
+	slice.Data = uintptr(unsafe.Pointer(tib.tib.data))
+	slice.Len = num
+	slice.Cap = num
+	return tib
+}
+
+func AllocTransientBuffers(verts interface{}, idxs *[]uint16, decl VertexDecl, numVerts, numIndices int) (tvb TransientVertexBuffer, tib TransientIndexBuffer, ok bool) {
+	val := reflect.ValueOf(verts)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		panic(errors.New("bgfx: expected pointer to slice"))
+	}
+	ok = bool(C.bgfx_alloc_transient_buffers(
+		&tvb.tvb,
+		&decl.decl,
+		C.uint16_t(numVerts),
+		&tib.tib,
+		C.uint16_t(numIndices),
+	))
+	if !ok {
+		return
+	}
+	slice := (*reflect.SliceHeader)(unsafe.Pointer(val.Pointer()))
+	slice.Data = uintptr(unsafe.Pointer(tvb.tvb.data))
+	slice.Len = numVerts
+	slice.Cap = numVerts
+	slice = (*reflect.SliceHeader)(unsafe.Pointer(idxs))
+	slice.Data = uintptr(unsafe.Pointer(tib.tib.data))
+	slice.Len = numIndices
+	slice.Cap = numIndices
+	return
+}
+
+type InstanceDataBuffer struct {
+	b    *C.bgfx_instance_data_buffer_t
+	data []byte
+	n    int
+}
+
+func AllocInstanceDataBuffer(num, stride int) InstanceDataBuffer {
+	idb := C.bgfx_alloc_instance_data_buffer(
+		C.uint32_t(num),
+		C.uint16_t(stride),
+	)
+	slice := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(idb.data)),
+		Len:  int(idb.size),
+		Cap:  int(idb.size),
+	}
+	return InstanceDataBuffer{
+		b:    idb,
+		data: *(*[]byte)(unsafe.Pointer(&slice)),
+	}
+}
+
+func (b *InstanceDataBuffer) Write(p []byte) (n int, err error) {
+	n = len(p)
+	if b.n+n >= len(b.data) {
+		n = len(b.data) - b.n
+		err = io.EOF
+	}
+	for i := 0; i < n; i++ {
+		b.data[b.n+i] = p[i]
+	}
+	b.n += n
+	return
+}
+
+type Shader struct {
+	h C.bgfx_shader_handle_t
+}
+
+func CreateShader(data []byte) Shader {
+	return Shader{
+		h: C.bgfx_create_shader(
+			// to keep things simple for now, we'll just copy
+			C.bgfx_copy(unsafe.Pointer(&data[0]), C.uint32_t(len(data))),
+		),
+	}
+}
+
+func DestroyShader(s Shader) {
+	C.bgfx_destroy_shader(s.h)
+}
+
+type Program struct {
+	h C.bgfx_program_handle_t
+}
+
+func CreateProgram(vsh, fsh Shader, destroyShaders bool) Program {
+	return Program{
+		h: C.bgfx_create_program(vsh.h, fsh.h, C._Bool(destroyShaders)),
+	}
+}
+
+func DestroyProgram(p Program) {
+	C.bgfx_destroy_program(p.h)
+}
+
+type ViewID int8
+
+type ClearOptions uint8
+
+const (
+	ClearColor ClearOptions = 1 << iota
+	ClearDepth
+	ClearStencil
+)
+
+func SetViewRect(view ViewID, x, y, w, h int) {
+	C.bgfx_set_view_rect(
+		C.uint8_t(view),
+		C.uint16_t(x),
+		C.uint16_t(y),
+		C.uint16_t(w),
+		C.uint16_t(h),
+	)
+}
+
+func SetViewTransform(viewID ViewID, view, proj [16]float32) {
+	C.bgfx_set_view_transform(
+		C.uint8_t(viewID),
+		unsafe.Pointer(&view[0]),
+		unsafe.Pointer(&proj[0]),
+	)
+}
+
+func SetViewClear(view ViewID, clear ClearOptions, rgba uint32, depth float32, stencil uint8) {
+	C.bgfx_set_view_clear(
+		C.uint8_t(view),
+		C.uint8_t(clear),
+		C.uint32_t(rgba),
+		C.float(depth),
+		C.uint8_t(stencil),
+	)
+}
+
+func SetViewFrameBuffer(view ViewID, fb FrameBuffer) {
+	C.bgfx_set_view_frame_buffer(
+		C.uint8_t(view),
+		fb.h,
+	)
+}
+
+type State uint64
+
+const StateDefault = StateRGBWrite | StateAlphaWrite | StateDepthWrite | StateDepthTestLess | StateCullCW | StateMSAA
+
+const (
+	StateRGBWrite State = 1 << iota
+	StateAlphaWrite
+	StateDepthWrite
+)
+
+const (
+	StateDepthTestLess State = 0x10 << iota
+	StateDepthTestLessEqual
+)
+
+const (
+	StateCullCW State = 0x0000001000000000 << iota
+	StateCullCCW
+	StateCullMask = StateCullCW | StateCullCCW
+)
+
+const (
+	StateMSAA State = 0x1000000000000000
+)
+
+const (
+	StateBlendMask State = 0x000000000ffff000
+)
+
+type BlendValue uint32
+
+const BlendShift BlendValue = 12
+const (
+	BlendZero BlendValue = 0x1000 + iota<<BlendShift
+	BlendOne
+	BlendSrcColor
+	BlendInvSrcColor
+	BlendSrcAlpha
+	BlendInvSrcAlpha
+	BlendDstAlpha
+	BlendInvDstAlpha
+	BlendDstColor
+	BlendInvDstColor
+	BlendSrcAlphaSat
+	BlendFactor
+	BlendInvFactor
+)
+
+func BlendFuncSeparate(srcRGB, dstRGB, srcA, dstA BlendValue) State {
+	return (State(srcRGB) | (State(dstRGB) << 4)) |
+		((State(srcA) | (State(dstA) << 4)) << 8)
+}
+
+func BlendFunc(src, dst BlendValue) State {
+	return BlendFuncSeparate(src, dst, src, dst)
+}
+
+func StateBlendAlpha() State {
+	return BlendFunc(BlendSrcAlpha, BlendInvSrcAlpha)
+}
+
+func SetTransform(mtx [16]float32) {
+	C.bgfx_set_transform(unsafe.Pointer(&mtx[0]), 1)
+}
+
+func SetProgram(prog Program) {
+	C.bgfx_set_program(prog.h)
+}
+
+func SetVertexBuffer(vb VertexBuffer) {
+	C.bgfx_set_vertex_buffer(vb.h, 0, 0xffffffff)
+}
+
+func SetTransientVertexBuffer(tvb TransientVertexBuffer, start, num int) {
+	C.bgfx_set_transient_vertex_buffer(&tvb.tvb, C.uint32_t(start), C.uint32_t(num))
+}
+
+func SetIndexBuffer(ib IndexBuffer) {
+	C.bgfx_set_index_buffer(ib.h, 0, 0xffffffff)
+}
+
+func SetTransientIndexBuffer(tib TransientIndexBuffer, start, num int) {
+	C.bgfx_set_transient_index_buffer(&tib.tib, C.uint32_t(start), C.uint32_t(num))
+}
+
+func SetInstanceDataBuffer(idb InstanceDataBuffer) {
+	C.bgfx_set_instance_data_buffer(idb.b, 0xffff)
+}
+
+func SetUniform(u Uniform, ptr interface{}, num int) {
+	val := reflect.ValueOf(ptr)
+	C.bgfx_set_uniform(u.h, unsafe.Pointer(val.Pointer()), C.uint16_t(num))
+}
+
+func SetTexture(stage uint8, u Uniform, t Texture) {
+	C.bgfx_set_texture(C.uint8_t(stage), u.h, t.h, C.UINT32_MAX)
+}
+
+func SetTextureFromFrameBuffer(stage uint8, u Uniform, fb FrameBuffer) {
+	C.bgfx_set_texture_from_frame_buffer(C.uint8_t(stage), u.h, fb.h, 0, C.UINT32_MAX)
+}
+
+func SetState(state State) {
+	C.bgfx_set_state(C.uint64_t(state), 0)
+}
+
+func Submit(view ViewID) {
+	C.bgfx_submit(C.uint8_t(view), 0)
+}
+
+func Discard() {
+	C.bgfx_discard()
 }
