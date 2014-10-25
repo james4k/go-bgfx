@@ -40,7 +40,7 @@ func Shutdown() {
 type ResetFlags uint32
 
 const (
-	ResetVSync = 0x80
+	ResetVSync ResetFlags = 0x80
 )
 
 // Reset resets the graphics settings.
@@ -147,7 +147,7 @@ const (
 )
 
 const (
-	CapsTexture3D = 0x0000000000000004 << iota
+	CapsTexture3D CapFlags = 0x0000000000000004 << iota
 	CapsVertexAttribHalf
 	CapsInstancing
 	CapsRendererMultithreaded
@@ -762,7 +762,13 @@ func SetViewFrameBuffer(view ViewID, fb FrameBuffer) {
 
 type State uint64
 
-const StateDefault = StateRGBWrite | StateAlphaWrite | StateDepthWrite | StateDepthTestLess | StateCullCW | StateMSAA
+const StateDefault State = 0 |
+	StateRGBWrite |
+	StateAlphaWrite |
+	StateDepthWrite |
+	StateDepthTestLess |
+	StateCullCW |
+	StateMSAA
 
 const (
 	StateRGBWrite State = 1 << iota
