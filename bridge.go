@@ -27,6 +27,8 @@ const (
 	_
 	RendererTypeOpenGLES
 	RendererTypeOpenGL
+
+	RendererTypeCount
 )
 
 func Init() {
@@ -40,7 +42,15 @@ func Shutdown() {
 type ResetFlags uint32
 
 const (
-	ResetVSync ResetFlags = 0x80
+	ResetFullscreen ResetFlags = 0x0001
+	ResetMSAAX2                = 0x0010
+	ResetMSAAX4                = 0x0020
+	ResetMSAAX8                = 0x0030
+	ResetMSAAX16               = 0x0040
+	ResetMSAAShift             = 4
+	ResetMSAAMask              = 0x0070
+	ResetVSync                 = 0x0080
+	ResetCapture               = 0x0100
 )
 
 // Reset resets the graphics settings.
@@ -196,6 +206,8 @@ const (
 	Uniform4fv
 	Uniform3x3fv
 	Uniform4x4fv
+
+	UniformTypeCount
 )
 
 type Uniform struct {
@@ -275,6 +287,7 @@ const (
 	TextureMagPoint
 	TextureMagAnisotropic
 	TextureMipPoint
+	TextureComputeWrite = 0x00100000
 )
 
 const (
@@ -497,6 +510,8 @@ const (
 	AttribTexcoord5
 	AttribTexcoord6
 	AttribTexcoord7
+
+	AttribCount
 )
 
 type AttribType uint8
@@ -506,6 +521,8 @@ const (
 	AttribTypeInt16
 	AttribTypeHalf
 	AttribTypeFloat
+
+	AttribTypeCount
 )
 
 type VertexDecl struct {
